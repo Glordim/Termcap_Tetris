@@ -1,18 +1,7 @@
-#include <stdlib.h>
-#include <stdio.h>
-
-#include <termcap.h>
-#include <termios.h>
-
-#ifdef unix
-	static char termcap_buffer[2048];
-#else
-	#define termcap_buffer 0
-#endif
-
+#include "termcap_initializer.h"
 #include "tetris.h"
 
-int init_termcap();
+#include <termios.h>
 
 int main(int argc, char **argv)
 {
@@ -20,7 +9,7 @@ int main(int argc, char **argv)
 	struct termios s_termios_backup;
 	int ret = 0;
 
-	/* On evite les warnings pour variables non utilisées. */
+	/* Supression Unused Warning */
 	(void)argc;
 	(void)argv;
 
@@ -45,32 +34,5 @@ int main(int argc, char **argv)
 	}
 
 	return ret;
-}
-
-int init_termcap()
-{
-	int ret;
-	char *term_name = getenv("TERM");
-
-	if (term_name == NULL)
-	{
-		fprintf(stderr, "Specify a terminal type with 'TERM=<type>'.\n");
-		return -1;
-	}
-
-	ret = tgetent(termcap_buffer, term_name);
-
-	if (ret == -1)
-	{
-		fprintf(stderr, "Could not access the termcap data base.\n");
-		return -1;
-	}
-	else if (ret == 0)
-	{
-		fprintf(stderr, "Terminal type '%s' is not defined in termcap database (or too little information).\n", term_name);
-		return -1;
-	}
-
-	return 0;
 }
 

@@ -1,16 +1,10 @@
+#include "termcap_initializer.h"
 #include "area.h"
 #include "shapes.h"
 
-#include <termcap.h>
 #include <curses.h>
 
 #include <stdio.h>
-
-#ifdef unix
-	extern static char termcap_buffer[2048];
-#else
-	#define termcap_buffer 0
-#endif
 
 void init_area()
 {
@@ -32,15 +26,13 @@ void init_area()
 
 void draw_area_border()
 {
-	char *cm_cmd = tgetstr("cm", termcap_buffer);
-
 	int y;
 	int x;
 
 	y = 0;
 	while (y < AREA_HEIGHT + 2)
 	{
-		tputs(tgoto(cm_cmd, 0, y), 1, putchar);
+		tputs(tgoto(tc_cmd.cm, 0, y), 1, putchar);
 
 		if (y == 0 || y == AREA_HEIGHT + 2 - 1)
 		{
@@ -53,11 +45,11 @@ void draw_area_border()
 		}
 		else
 		{
-			tputs(tgoto(cm_cmd, 0, y), 1, putchar);
+			tputs(tgoto(tc_cmd.cm, 0, y), 1, putchar);
 
 			printf("|");
 
-			tputs(tgoto(cm_cmd, AREA_WIDTH * WIDTH_MULTIPLICATER + 1, y), 1, putchar);
+			tputs(tgoto(tc_cmd.cm, AREA_WIDTH * WIDTH_MULTIPLICATER + 1, y), 1, putchar);
 
 			printf("|");
 		}
@@ -141,10 +133,6 @@ void check_complete_line()
 
 void move_down_all_line(int y)
 {
-	char *ab_cmd = tgetstr("AB", termcap_buffer);
-	char *reset_cmd = tgetstr("me", termcap_buffer);
-	char *cm_cmd = tgetstr("cm", termcap_buffer);
-
 	int *line;
 
 	int x;
@@ -162,11 +150,11 @@ void move_down_all_line(int y)
 				line[x] = area[y - 1][x];
 
 			if (line[x] != -1)
-				tputs(tparm(ab_cmd, COLOR_RED + line[x]), 1, putchar);
+				tputs(tparm(tc_cmd.ab, COLOR_RED + line[x]), 1, putchar);
 			else
-				tputs(tparm(ab_cmd, COLOR_BLACK), 1, putchar);
+				tputs(tparm(tc_cmd.ab, COLOR_BLACK), 1, putchar);
 
-			tputs(tgoto(cm_cmd, 1 + x * WIDTH_MULTIPLICATER, y + 1), 1, putchar);
+			tputs(tgoto(tc_cmd.cm, 1 + x * WIDTH_MULTIPLICATER, y + 1), 1, putchar);
 
 			printf("  ");
 
@@ -176,6 +164,6 @@ void move_down_all_line(int y)
 		--y;
 	}
 
-	tputs(reset_cmd, 1, putchar);
+	tputs(tc_cmd.reset, 1, putchar);
 }
 

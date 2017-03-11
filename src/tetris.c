@@ -1,10 +1,10 @@
 #define _POSIX_C_SOURCE 199309L
 
+#include "termcap_initializer.h"
 #include "tetris.h"
 #include "area.h"
 #include "shapes.h"
 
-#include <termcap.h>
 #include <curses.h>
 
 #include <string.h>
@@ -15,12 +15,6 @@
 #include <signal.h>
 
 #include <sys/select.h>
-
-#ifdef unix
-	extern static char termcap_buffer[2048];
-#else
-	#define termcap_buffer 0
-#endif
 
 int keep_running;
 
@@ -37,16 +31,12 @@ int tetris()
 
 	long last_time = time(0);
 
-	char *cm_cmd = tgetstr("cm", termcap_buffer);
-	char *vi_cmd = tgetstr("vi", termcap_buffer);
-	char *ve_cmd = tgetstr("ve", termcap_buffer);
-
 	struct timespec ts;
 	ts.tv_sec = 0;
 	ts.tv_nsec = 5000;
 
 	srand(time(0));
-	tputs(vi_cmd, 1, putchar); /* Masque le curseur */
+	tputs(tc_cmd.vi, 1, putchar); /* Masque le curseur */
 
 	clear_term();
 
@@ -64,6 +54,7 @@ int tetris()
 		if (current_shape.id == -1)
 		{
 			next_shape(&current_shape);
+			draw_shape(&current_shape, COLOR_RED + current_shape.id);
 
 			shadow_shape = current_shape;
 		}
@@ -103,8 +94,8 @@ int tetris()
 		nanosleep(&ts, NULL);
 	}
 
-	tputs(ve_cmd, 1, putchar);
-	tputs(tgoto(cm_cmd, 0, 2 + AREA_HEIGHT), 1, putchar);
+	tputs(tc_cmd.ve, 1, putchar);
+	tputs(tgoto(tc_cmd.cm, 0, 2 + AREA_HEIGHT), 1, putchar);
 	fflush(stdout);
 
 	return 0;
@@ -112,11 +103,6 @@ int tetris()
 
 void check_input(struct s_shape *current_shape, struct s_shape *shadow_shape, long *last_time)
 {
-	char *kl_cmd = tgetstr("kl", termcap_buffer);
-	char *kr_cmd = tgetstr("kr", termcap_buffer);
-	char *kd_cmd = tgetstr("ku", termcap_buffer);
-	char *ku_cmd = tgetstr("kd", termcap_buffer);
-
 	int i = 0;
 	char read_buffer[64];
 	struct timeval timeout;
@@ -149,19 +135,19 @@ void check_input(struct s_shape *current_shape, struct s_shape *shadow_shape, lo
 				memset(read_buffer, 0, 64);
 				read(0, read_buffer, 64);
 				
-				if (strncmp(read_buffer, kl_cmd, strlen(kl_cmd)) == 0 || read_buffer[0] == 'a') /* q for azerty layout */
+				if (strcmp(read_buffer, tc_cmd.kl) == 0 || read_buffer[0] == 'a') /* q for azerty layout */
 				{
 					--current_shape->x;
 				}
-				else if (strcmp(read_buffer, kr_cmd) == 0 || read_buffer[0] == 'd')
+				else if (strcmp(read_buffer, tc_cmd.kr) == 0 || read_buffer[0] == 'd')
 				{
 					++current_shape->x;
 				}
-				else if (strcmp(read_buffer, kd_cmd) == 0 || read_buffer[0] == 's')
+				else if (strcmp(read_buffer, tc_cmd.kd) == 0 || read_buffer[0] == 's')
 				{
 					*last_time = 0;
 				}
-				else if (strcmp(read_buffer, ku_cmd) == 0 || read_buffer[0] == 'w') /* z for azerty layout */
+				else if (strcmp(read_buffer, tc_cmd.ku) == 0 || read_buffer[0] == 'w') /* z for azerty layout */
 				{
 					current_shape->orientation = (current_shape->orientation + 1) % NB_ROTATIONS;
 				}
@@ -181,9 +167,8 @@ void check_input(struct s_shape *current_shape, struct s_shape *shadow_shape, lo
 
 void clear_term()
 {
-	char *cl_cmd = tgetstr("cl", termcap_buffer);
-
-	tputs(cl_cmd, 1, putchar);
+	tputs(tc_cmd.cl, 1, putchar);
+	fflush(stdout);
 }
 
 void next_shape(struct s_shape *shape)
@@ -199,11 +184,7 @@ void draw_shape(struct s_shape *shape, int color)
 	int y;
 	int x;
 
-	char *ab_cmd = tgetstr("AB", termcap_buffer);
-	char *reset_cmd = tgetstr("me", termcap_buffer);
-	char *cm_cmd = tgetstr("cm", termcap_buffer);
-
-	tputs(tparm(ab_cmd, color), 1, putchar);
+	tputs(tparm(tc_cmd.ab, color), 1, putchar);
 
 	y = 0;
 	while (y < SHAPE_SIZE)
@@ -213,7 +194,7 @@ void draw_shape(struct s_shape *shape, int color)
 		{
 			if (shapes[shape->id][shape->orientation][y][x] != 0)
 			{
-				tputs(tgoto(cm_cmd, 1 + shape->x * WIDTH_MULTIPLICATER + x * WIDTH_MULTIPLICATER, shape->y + 1 + y), 1, putchar);
+				tputs(tgoto(tc_cmd.cm, 1 + shape->x * WIDTH_MULTIPLICATER + x * WIDTH_MULTIPLICATER, shape->y + 1 + y), 1, putchar);
 
 				printf("  ");
 			}
@@ -222,7 +203,7 @@ void draw_shape(struct s_shape *shape, int color)
 		++y;
 	}
 
-	tputs(reset_cmd, 1, putchar);
+	tputs(tc_cmd.reset, 1, putchar);
 }
 
 int test_collision(struct s_shape *shape)
