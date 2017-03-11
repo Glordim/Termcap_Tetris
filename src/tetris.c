@@ -104,7 +104,7 @@ int tetris()
 void check_input(struct s_shape *current_shape, struct s_shape *shadow_shape, long *last_time)
 {
 	int i = 0;
-	char read_buffer[64];
+	char read_buffer[64] = {0};
 	struct timeval timeout;
 
 	fd_set read_fd_set;
@@ -132,8 +132,7 @@ void check_input(struct s_shape *current_shape, struct s_shape *shadow_shape, lo
 		{
 			if (FD_ISSET(i, &read_fd_set) != 0)
 			{
-				memset(read_buffer, 0, 64);
-				read(0, read_buffer, 64);
+				read(0, read_buffer, sizeof(read_buffer));
 				
 				if (strcmp(read_buffer, tc_cmd.kl) == 0 || read_buffer[0] == 'a') /* q for azerty layout */
 				{
