@@ -110,12 +110,12 @@ void check_input(struct s_shape *current_shape, struct s_shape *shadow_shape, lo
 	fd_set read_fd_set;
 
 	FD_ZERO(&read_fd_set);
-	FD_SET(0, &read_fd_set);
+	FD_SET(STDIN_FILENO, &read_fd_set);
 
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 5000;
 
-	i = select(1, &read_fd_set, NULL, NULL, &timeout);
+	i = select(STDIN_FILENO + 1, &read_fd_set, NULL, NULL, &timeout);
 
 	if (i == -1)
 	{
@@ -127,39 +127,34 @@ void check_input(struct s_shape *current_shape, struct s_shape *shadow_shape, lo
 	}
 	else
 	{
-		i = 0;
-		while (i < FD_SETSIZE)
+		if (FD_ISSET(STDIN_FILENO, &read_fd_set) != 0)
 		{
-			if (FD_ISSET(i, &read_fd_set) != 0)
-			{
-				read(0, read_buffer, sizeof(read_buffer));
-				
-				if (strcmp(read_buffer, tc_cmd.kl) == 0 || read_buffer[0] == 'a') /* q for azerty layout */
-				{
-					--current_shape->x;
-				}
-				else if (strcmp(read_buffer, tc_cmd.kr) == 0 || read_buffer[0] == 'd')
-				{
-					++current_shape->x;
-				}
-				else if (strcmp(read_buffer, tc_cmd.kd) == 0 || read_buffer[0] == 's')
-				{
-					*last_time = 0;
-				}
-				else if (strcmp(read_buffer, tc_cmd.ku) == 0 || read_buffer[0] == 'w') /* z for azerty layout */
-				{
-					current_shape->orientation = (current_shape->orientation + 1) % NB_ROTATIONS;
-				}
+			read(STDIN_FILENO, read_buffer, sizeof(read_buffer));
 
-				if (shadow_shape->x != current_shape->x || shadow_shape->y != current_shape->y || shadow_shape->orientation != current_shape->orientation)
+			if (strncmp(read_buffer, tc_cmd.kl, strlen(tc_cmd.kl)) == 0 || read_buffer[0] == 'a') /* q for azerty layout */
+			{
+				--current_shape->x;
+			}
+			else if (strncmp(read_buffer, tc_cmd.kr, strlen(tc_cmd.kr)) == 0 || read_buffer[0] == 'd')
+			{
+				++current_shape->x;
+			}
+			else if (strncmp(read_buffer, tc_cmd.kd, strlen(tc_cmd.kd)) == 0 || read_buffer[0] == 's')
+			{
+				*last_time = 0;
+			}
+			else if (strncmp(read_buffer, tc_cmd.ku, strlen(tc_cmd.ku)) == 0 || read_buffer[0] == 'w') /* z for azerty layout */
+			{
+				current_shape->orientation = (current_shape->orientation + 1) % NB_ROTATIONS;
+			}
+
+			if (shadow_shape->x != current_shape->x || shadow_shape->y != current_shape->y || shadow_shape->orientation != current_shape->orientation)
+			{
+				if (test_collision(current_shape) != 0)
 				{
-					if (test_collision(current_shape) != 0)
-					{
-						*current_shape = *shadow_shape;
-					}
+					*current_shape = *shadow_shape;
 				}
 			}
-			++i;
 		}
 	}
 }

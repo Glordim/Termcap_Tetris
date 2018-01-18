@@ -2,15 +2,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-#ifdef unix
-	static char termcap_buffer[2048];
-#endif
+/*#define USE_TERMCAP*/
 
 struct s_termcap_cmd tc_cmd;
 
 int init_termcap()
 {
+#ifdef USE_TERMCAP
 	int ret;
 	char *term_name = getenv("TERM");
 
@@ -20,7 +20,7 @@ int init_termcap()
 		return -1;
 	}
 
-	ret = tgetent(termcap_buffer, term_name);
+	ret = tgetent(NULL, term_name);
 
 	if (ret == -1)
 	{
@@ -33,18 +33,37 @@ int init_termcap()
 		return -1;
 	}
 
-	tc_cmd.cl = tgetstr("cl", termcap_buffer);
-	tc_cmd.cm = tgetstr("cm", termcap_buffer);
-	tc_cmd.vi = tgetstr("vi", termcap_buffer);
-	tc_cmd.ve = tgetstr("ve", termcap_buffer);
-	tc_cmd.ab = tgetstr("AB", termcap_buffer);
-	tc_cmd.reset = tgetstr("me", termcap_buffer);
+	tc_cmd.cl = tgetstr("cl", NULL);
+	tc_cmd.cm = tgetstr("cm", NULL);
+	tc_cmd.vi = tgetstr("vi", NULL);
+	tc_cmd.ve = tgetstr("ve", NULL);
+	tc_cmd.ab = tgetstr("AB", NULL);
+	tc_cmd.reset = tgetstr("me", NULL);
 
-	tc_cmd.ku = tgetstr("ku", termcap_buffer);
-	tc_cmd.kd = tgetstr("kd", termcap_buffer);
-	tc_cmd.kl = tgetstr("kl", termcap_buffer);
-	tc_cmd.kr = tgetstr("kr", termcap_buffer);
+	tc_cmd.ku = tgetstr("ku", NULL);
+	tc_cmd.kd = tgetstr("kd", NULL);
+	tc_cmd.kl = tgetstr("kl", NULL);
+	tc_cmd.kr = tgetstr("kr", NULL);
+#else
 
+	if (setupterm(NULL, STDOUT_FILENO, NULL) != 0)
+	{
+		return -1;
+	}
+
+	tc_cmd.cl = tigetstr("clear");
+	tc_cmd.cm = tigetstr("cup");
+	tc_cmd.vi = tigetstr("civis");
+	tc_cmd.ve = tigetstr("cnorm");
+	tc_cmd.ab = tigetstr("setab");
+	tc_cmd.reset = tigetstr("sgr0");
+
+	tc_cmd.ku = tigetstr("kcuu1");
+	tc_cmd.kd = tigetstr("kcud1");
+	tc_cmd.kl = tigetstr("kcub1");
+	tc_cmd.kr = tigetstr("kcuf1");
+
+#endif
 	return 0;
 }
 

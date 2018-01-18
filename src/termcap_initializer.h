@@ -1,13 +1,8 @@
 #ifndef TERMCAP_INITIALIZER_H
 #define TERMCAP_INITIALIZER_H
 
-#include <termcap.h>
-
-#ifdef unix
-	extern static char termcap_buffer[2048];
-#else
-	#define termcap_buffer 0
-#endif
+#include <term.h>
+#include <curses.h>
 
 int init_termcap();
 
